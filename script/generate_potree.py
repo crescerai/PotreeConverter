@@ -61,7 +61,9 @@ def process_directory(dir_path, output_dir , remove_int64):
         ic(entry_path)
         # If entry is a directory, call the function recursively
         if os.path.isdir(entry_path):
-            process_directory(entry_path, remove_int64)
+            sub_dir = os.path.join(output_dir, entry_path.split("/")[-1])
+            process_directory(entry_path, sub_dir, remove_int64)
+            
         
         # If entry is a file, process if it has `.las` or `.laz` extension
         elif entry_path.endswith((".las", ".laz")):
