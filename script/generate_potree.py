@@ -2,7 +2,7 @@ import os
 import sys
 import subprocess
 import laspy
-from clean_file import clean_las , load_las, need_cleaning
+from script.clean_file import clean_las , load_las, need_cleaning
 from pathlib import Path
 from icecream import ic
 

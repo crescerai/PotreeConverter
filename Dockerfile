@@ -42,9 +42,11 @@ RUN sed -i 's/port: 1234,/host: "0.0.0.0",\n            port: 1234,/g' /app/potr
 # Expose any required ports (adjust based on Potree default)
 EXPOSE 1234
 
-# Set the default command to start the Potree web application
-CMD ["npm", "start"]
-
 # Install Python dependencies from requirements.txt
 COPY requirements.txt /app/requirements.txt
 RUN pip3 install -r /app/requirements.txt
+RUN pip install -e .
+COPY web_ui_potree.py /app/web_ui_potree.py
+
+# Set the default command to start both the Potree web application and the Streamlit app
+CMD ["sh", "-c", "npm start & streamlit run /app/web_ui_potree.py"]

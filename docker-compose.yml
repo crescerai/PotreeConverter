@@ -5,7 +5,7 @@ services:
     image: potree_complete  # Use the pre-built image
     container_name: potree_webviewer
     ports:
-      - "1235:1235"  # Map container's port 1234 to host's port 1234
+      - "1234:1234"  # Map container's port 1234 to host's port 1234
     volumes:
       - /home:/data
       - <ADD PATH>/output:/app/potree/crescer
