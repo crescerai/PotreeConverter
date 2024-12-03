@@ -6,6 +6,7 @@ import pandas as pd
 import tqdm
 from icecream import ic
 import traceback
+from concurrent.futures import ProcessPoolExecutor
 
 
 def load_las(filename, sort=False, col_type="features"):
@@ -94,29 +95,44 @@ def create_las(
 
     outfile.write(file_loc)
 
+def process_file(file_loc):
+    """
+    Processes a single LAS/LAZ file by loading, cleaning, and saving it back to its location.
+    
+    Parameters:
+    file_loc (Path): The file path to process.
+    """
+    try:
+        df = load_las(file_loc)  # Load LAS/LAZ data into a DataFrame
+        create_las(df, file_loc, file_loc)  # Clean and save it back
+    except Exception as e:
+        print(f"Error processing {file_loc}: {e}")
+        print(traceback.format_exc())
+
 def clean_las(path):
-	
-	'''
-    Cleans LAS/LAZ files in the given directory or file path.
-	This function processes LAS/LAZ files by loading them, performing necessary
-	cleaning operations, and then saving the cleaned data back to the original file location.
-	Parameters:
-	path (str): The directory or file path containing the LAS/LAZ files to be cleaned.
-	Raises:
-	Exception: If an error occurs during the processing of the files, the exception
-			   is caught and its message along with the traceback is printed.
-     '''
-	try:
-		path = Path(path)
-		if path.is_dir():
-			all_las = list(path.rglob("*.las")) + list(path.rglob("*.laz"))
-		else:
-			all_las = [path]
-		
-		for file_loc in tqdm.tqdm(all_las):
-			df = load_las(file_loc)
-			create_las(df, file_loc, file_loc)
-	except Exception as e:
-		print(e)
-		print(traceback.format_exc())
-          
+    '''
+    Cleans LAS/LAZ files in the given directory or file path using parallel processing.
+    This function processes LAS/LAZ files by loading them, performing necessary
+    cleaning operations, and then saving the cleaned data back to the original file location.
+    
+    Parameters:
+    path (str): The directory or file path containing the LAS/LAZ files to be cleaned.
+    
+    Raises:
+    Exception: If an error occurs during the processing of the files, the exception
+               is caught and its message along with the traceback is printed.
+    '''
+    try:
+        path = Path(path)
+        if path.is_dir():
+            all_las = list(path.rglob("*.las")) + list(path.rglob("*.laz"))
+        else:
+            all_las = [path]
+
+        # Use ProcessPoolExecutor for parallel processing
+        with ProcessPoolExecutor() as executor:
+            list(tqdm.tqdm(executor.map(process_file, all_las), total=len(all_las)))
+
+    except Exception as e:
+        print(e)
+        print(traceback.format_exc())
