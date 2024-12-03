@@ -2,7 +2,7 @@ import os
 import sys
 import subprocess
 import laspy
-from script.clean_file import clean_las , load_las, need_cleaning
+from script.clean_file import clean_las , load_las
 from pathlib import Path
 from icecream import ic
 
@@ -23,7 +23,7 @@ def process_file(file_path, output_dir, remove_int64):
     """
     try:
         # Check and clean file using clean_las
-        if need_cleaning(file_path) and remove_int64:
+        if remove_int64:
             clean_las(file_path)
         else:
             raise ValueError(
