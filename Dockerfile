@@ -37,7 +37,7 @@ WORKDIR /app/potree
 RUN npm install
 
 # Modify gulpfile.js to update port and add host
-RUN sed -i 's/port: 1234,/host: "0.0.0.0",\n                port: 1235,/g' /app/potree/gulpfile.js
+RUN sed -i 's/port: 1234,/host: "0.0.0.0",\n                port: 1234,/g' /app/potree/gulpfile.js
 
 # Expose any required ports (adjust based on Potree default)
 EXPOSE 1234
