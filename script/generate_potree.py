@@ -2,7 +2,7 @@ import os
 import sys
 import subprocess
 import laspy
-from script.clean_file import clean_las , load_las
+from clean_file import clean_las , load_las
 from pathlib import Path
 from icecream import ic
 
@@ -26,8 +26,8 @@ def process_file(file_path, output_dir, remove_int64):
         if remove_int64:
             clean_las(file_path)
         else:
-            raise ValueError(
-                f"File {file_path} contains unsupported columns. Pass --remove_int64 to clean it."
+            ic(
+                f". Pass --remove_int64 to clean  file "
             )
         
         # Prepare the output directory for PotreeConverter
@@ -41,7 +41,6 @@ def process_file(file_path, output_dir, remove_int64):
 
     except Exception as e:
         print(f"Error processing file {file_path}: {e}")
-        raise
 
 
 def process_directory(dir_path, output_dir , remove_int64):

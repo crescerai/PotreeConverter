@@ -1,6 +1,6 @@
 import streamlit as st
 import os
-from script.generate_potree import process_directory , process_file
+from generate_potree import process_directory , process_file
 
 # Title of the app
 st.title("Potree Converter")
