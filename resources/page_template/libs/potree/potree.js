@@ -59036,6 +59036,7 @@ void main() {
 }`;
 
 	const ClassificationScheme = {
+
         DEFAULT: {
             0: {
                 visible: true,
@@ -59045,12 +59046,12 @@ void main() {
             1: {
                 visible: true,
                 name: "unclassified",
-                color: [0.5, 0.5, 0.5, 1.0],
+                color: [0.827, 0.827, 0.827, 1.0],
             },
             2: {
                 visible: true,
                 name: "ground",
-                color: [0.63, 0.32, 0.18, 1.0],
+                color: [0.827, 0.827, 0.827, 1.0],
             },
             3: {
                 visible: true,
