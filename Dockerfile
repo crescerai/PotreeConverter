@@ -26,7 +26,7 @@ RUN apt-get update && apt-get install -y \
 # Clone and build PotreeConverter
 RUN git clone https://github.com/crescerai/PotreeConverter.git /app/PotreeConverter && \
     cd /app/PotreeConverter && \
-    git switch classmap_modification && \
+    git switch containerise_potree && \
     mkdir build && cd build && \
     cmake .. && make
 
