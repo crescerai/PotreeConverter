@@ -11,7 +11,7 @@ services:
       - /home:/home
       - <ADD PATH>/output:/app/potree/crescer
 
-    # restart: unless-stopped
+    restart: unless-stopped
     networks:
       - potree_network
     environment:

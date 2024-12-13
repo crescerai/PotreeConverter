@@ -59080,7 +59080,7 @@ void main() {
             },
             9: { visible: true, name: "water", color: [0.0, 0.0, 1.0, 1.0] },
             13: { visible: true, name: "Wire", color: [1.0, 0.0, 0.0, 1.0] },
-            15: { visible: true, name: "Tower", color: [1.0, 1.0, 0.0, 1.0] },
+            15: { visible: true, name: "Tower", color: [0.99, 0.3, 0.0, 1.0] },
             17: {
                 visible: true,
                 name: "Bridge",
