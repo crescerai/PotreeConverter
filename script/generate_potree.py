@@ -25,11 +25,7 @@ def process_file(file_path, output_dir, remove_int64):
         # Check and clean file using clean_las
         if remove_int64:
             clean_las(file_path)
-        else:
-            ic(
-                f". Pass --remove_int64 to clean  file "
-            )
-        
+            
         # Prepare the output directory for PotreeConverter
         os.makedirs(output_dir, exist_ok=True)
 

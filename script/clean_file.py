@@ -9,7 +9,7 @@ import traceback
 from concurrent.futures import ProcessPoolExecutor
 
 
-def load_las(filename, sort=False, col_type="features"):
+def load_las(filename, sort=False, col_type="all"):
     """Loads a las file into pandas dataframe, removes NaNs and optionally sorts the df. Defaults to False.
 
     Note: Following features are included in the dataframe - x, y, z, intensity, return num., num. of returns, class
@@ -104,6 +104,13 @@ def process_file(file_loc):
     """
     try:
         df = load_las(file_loc)  # Load LAS/LAZ data into a DataFrame
+
+        for col in df.columns:
+            if df[col].dtype == 'int64':
+                df[col] = df[col].astype('int32')
+            if df[col].dtype == 'uint64':
+                df[col] = df[col].astype('uint32')
+
         create_las(df, file_loc, file_loc)  # Clean and save it back
     except Exception as e:
         print(f"Error processing {file_loc}: {e}")

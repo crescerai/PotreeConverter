@@ -10,7 +10,7 @@ BASE_OUTPUT_FOLDER = "/app/potree/crescer"
 input_folder = st.text_input("Input Folder/File")
 with st.sidebar:
 	output_folder_base = st.text_input("Base Output Folder", value=BASE_OUTPUT_FOLDER)
-	need_cleaning = st.checkbox("Need Cleaning", value=True)
+	need_cleaning = st.checkbox("Need Cleaning", value=False)
 
 
 # Display the values
