@@ -440,6 +440,22 @@ void createReport(Options& options, vector<Source> sources, string targetDir, St
 
 }
 
+string getServerURL(){
+	const char *env_var = std::getenv("SERVER_URL"); // Replace "HOME" with your variable
+
+	if (env_var)
+	{
+		string server_url(env_var); 
+		return server_url;
+	}
+	else
+	{
+
+		std::cout << "Environment variable not found!" << std::endl;
+	}
+	return "http://localhost:3001/save-json";
+}
+
 void generatePage(string exePath, string pagedir, string pagename) {
 	string templateDir = exePath + "/resources/page_template";
 	string templateSourcePath = templateDir + "/viewer_template.html";
@@ -467,9 +483,9 @@ void generatePage(string exePath, string pagedir, string pagename) {
 			
 			let material = pointcloud.material;
 			material.size = 1;
-			material.pointSizeType = Potree.PointSizeType.ADAPTIVE;
+			material.pointSizeType = Potree.PointSizeType.FIXED;
 			material.shape = Potree.PointShape.SQUARE;
-			material.activeAttributeName = "rgba";
+			material.activeAttributeName = "classification";
 			
 			scene.addPointCloud(pointcloud);
 			
@@ -478,12 +494,14 @@ void generatePage(string exePath, string pagedir, string pagename) {
 
 		)V0G0N";
 
+		string server_url = getServerURL();
 		string url = "./pointclouds/" + pagename + "/metadata.json";
 
 		string strPointcloud = stringReplace(strPointcloudTemplate, "<!-- URL -->", url);
 		strPointcloud = stringReplace(strPointcloud, "<!-- NAME -->", pagename);
 
 		string strPage = stringReplace(strTemplate, "<!-- INCLUDE POINTCLOUD -->", strPointcloud);
+		string strPage = stringReplace(strPage, "<!-- SERVER_URL -->", server_url);
 
 
 		writeFile(pageTargetPath, strPage);
