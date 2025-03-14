@@ -501,7 +501,8 @@ void generatePage(string exePath, string pagedir, string pagename) {
 		strPointcloud = stringReplace(strPointcloud, "<!-- NAME -->", pagename);
 
 		string strPage = stringReplace(strTemplate, "<!-- INCLUDE POINTCLOUD -->", strPointcloud);
-		string strPage = stringReplace(strPage, "<!-- SERVER_URL -->", server_url);
+		strPage = stringReplace(strPage, "<!-- SERVER_URL -->", server_url);
+		strPage = stringReplace(strPage, "<!-- PAGE_NAME -->", pagename);
 
 
 		writeFile(pageTargetPath, strPage);

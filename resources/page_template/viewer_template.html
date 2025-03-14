@@ -5,7 +5,7 @@
 	<meta name="description" content="">
 	<meta name="author" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-	<title>Crescer Viewer</title>
+	<title>Iris Viewer</title>
 
 	<link rel="stylesheet" type="text/css" href="./libs/potree/potree.css">
 	<link rel="stylesheet" type="text/css" href="./libs/jquery-ui/jquery-ui.min.css">
@@ -43,10 +43,10 @@
 	<script type="module">
 
 		const ANNOTATION_DIR = "annotations";
-		const page_name = '<!-- PAGE NAME -->';
+		const page_name = '<!-- PAGE_NAME -->';
 		const annotation_file = `./${ANNOTATION_DIR}/${page_name}.json`;
 		
-		import * as THREE from "../libs/three.js/build/three.module.js";
+		import * as THREE from "./libs/three.js/build/three.module.js";
 
 		window.viewer = new Potree.Viewer(document.getElementById("potree_render_area"));
 		
@@ -72,7 +72,7 @@
 				data: dataString
 			};
 			console.log(json);
-			fetch('<!-- SERVER_URL -->', {
+			fetch(<!-- SERVER_URL -->, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
