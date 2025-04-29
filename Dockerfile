@@ -50,4 +50,4 @@ RUN pip3 install -r /app/PotreeConverter/requirements.txt
 #     echo "[server]\nheadless = true\naddress = \"0.0.0.0\"\nenableCORS = false" > ~/.streamlit/config.toml
 
 # Set the default command to start both the Potree web application and the Streamlit app
-CMD ["sh", "-c", "npm start & streamlit run /app/PotreeConverter/script/web_ui_potree.py"]
+CMD ["sh", "-c", "npm start & streamlit run /app/PotreeConverter/script/web_ui_potree.py --server.port 8501"]
