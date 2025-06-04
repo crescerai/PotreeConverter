@@ -21,4 +21,4 @@ RUN pip install streamlit
 COPY . .
 RUN mkdir build && cd build && cmake ../ && make
 
-CMD ["streamlit", "run", "script/webui_potree.py"]
+CMD ["streamlit", "run", "script/potree_converter_dashboard.py"]
