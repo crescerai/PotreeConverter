@@ -1,74 +1,20 @@
 
-"""
-las_processor.py
-
-Module for processing LAS/LAZ files and generating GeoJSON outputs.
-"""
-
 import os
 import laspy
 import json
 import pandas as pd
-from shapely.geometry import box, mapping
-import re
-import logging
-from shapely.geometry import shape
+from shapely.geometry import box, mapping , shape
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import pyproj
 from shapely.ops import transform
+import re
+from tqdm import tqdm
+import traceback
+from pathlib import Path
+
 import streamlit as st
-import threading
-from multiprocessing import Pool, Manager
-
-# Configure logging to console only
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-)
-logger = logging.getLogger(__name__)
-
-def try_extract_crs_from_las(las):
-    """
-    Attempts to extract the CRS from a LAS file.
-
-    Args:
-        las (laspy.LasData): The LAS file object.
-
-    Returns:
-        str or None: The EPSG code in 'EPSG:XXXX' format or None if not found.
-    """
-    try:
-        if hasattr(las.header, "epsg_number"):
-            epsg = las.header.epsg_number
-            if epsg and epsg > 0:
-                return f"EPSG:{epsg}"
-        if hasattr(las.header, "vlrs"):
-            for vlr in las.header.vlrs:
-                if hasattr(vlr, "record_id") and vlr.record_id == 2112:
-                    wkt = vlr.string
-                    if "EPSG" in wkt:
-                        idx = wkt.find("EPSG")
-                        epsg = ""
-                        for c in wkt[idx+5:]:
-                            if c.isdigit():
-                                epsg += c
-                            else:
-                                break
-                        if epsg:
-                            return f"EPSG:{epsg}"
-    except Exception as e:
-        logger.warning(f"Failed to extract CRS: {e}")
-    return None
 
 def parse_bbox_from_name(filename):
-    """
-    Parses bounding box coordinates from the filename.
-
-    Args:
-        filename (str): The filename to parse.
-
-    Returns:
-        tuple: (x, y) coordinates or (None, None) if parsing fails.
-    """
     m = re.search(r"e(\d+)n(\d+)", filename)
     if m:
         x = int(m.group(1)) * 1000
@@ -76,227 +22,284 @@ def parse_bbox_from_name(filename):
         return x, y
     return None, None
 
-def process_las_file(path, input_crs, counter=None, total=None):
-    """
-    Processes a single LAS/LAZ file to extract metadata and geometry.
-
-    Args:
-        path (str): Path to the LAS/LAZ file.
-        input_crs (str): Input CRS in 'EPSG:XXXX' format.
-        counter (multiprocessing.Value): Counter for processed files
-        total (int): Total number of files to process
-
-    Returns:
-        dict or None: Processed data or None if processing fails.
-    """
+def process_las_file(args):
+    path, input_crs = args
     fname = os.path.basename(path)
     try:
         las = laspy.read(path)
-        if len(las.x) == 0 or len(las.y) == 0:
+        if len(las.x) == 0:
+            return {"file": fname, "status": "error", "message": "File contains no points"}
+        
+        minx, maxx = float(min(las.x)), float(max(las.x))
+        miny, maxy = float(min(las.y)), float(max(las.y))
+        
+        # Check if bounding box is too small
+        if (maxx-minx < 1) or (maxy-miny < 1):
             x, y = parse_bbox_from_name(fname)
             if x is not None and y is not None:
                 minx, miny = x, y
-                maxx, maxy = x + 1000, y + 1000
+                maxx, maxy = x+1000, y+1000
             else:
-                if counter is not None:
-                    with counter.get_lock():
-                        counter.value += 1
-                return None
-        else:
-            minx, maxx = float(min(las.x)), float(max(las.x))
-            miny, maxy = float(min(las.y)), float(max(las.y))
+                return {
+                    "file": fname, 
+                    "status": "error", 
+                    "message": f"Degenerate bounding box: {minx},{miny} to {maxx},{maxy}"
+                }
+        
         bounds = box(minx, miny, maxx, maxy)
         total_points = len(las.x)
         class_counts = {}
         if hasattr(las, 'classification'):
             s = pd.Series(las.classification)
             class_counts = {int(cls): int(cnt) for cls, cnt in s.value_counts().items()}
-        detected_crs = try_extract_crs_from_las(las)
-        used_crs = input_crs or detected_crs or "EPSG:6350"
         
-        # Update counter if provided
-        if counter is not None:
-            with counter.get_lock():
-                counter.value += 1
-                
         return {
             "file": fname,
+            "status": "success",
             "geometry": mapping(bounds),
             "total_points": total_points,
             "class_distribution": class_counts,
-            "crs_used": used_crs
+            "crs_used": input_crs
         }
     except Exception as e:
-        logger.error(f"Error processing file {fname}: {e}")
+        # Try to extract bounding box from filename
         x, y = parse_bbox_from_name(fname)
         if x is not None and y is not None:
-            bounds = box(x, y, x + 1000, y + 1000)
-            
-            # Update counter if provided
-            if counter is not None:
-                with counter.get_lock():
-                    counter.value += 1
-                    
+            bounds = box(x, y, x+1000, y+1000)
             return {
                 "file": fname,
+                "status": "partial",
                 "geometry": mapping(bounds),
                 "total_points": 0,
                 "class_distribution": {},
-                "crs_used": input_crs
+                "crs_used": input_crs,
+                "message": f"Error reading file, used bbox from filename: {str(e)}"
             }
-        
-        # Update counter even on failure
-        if counter is not None:
-            with counter.get_lock():
-                counter.value += 1
-                
-        return None
+        else:
+            return {
+                "file": fname,
+                "status": "error",
+                "message": f"Failed to process: {str(e)}\n{traceback.format_exc()}"
+            }
 
 def reproject_geom(geom, from_epsg, to_epsg):
-    """
-    Reprojects geometry from one CRS to another.
-
-    Args:
-        geom (dict): Geometry in GeoJSON format.
-        from_epsg (str): Source CRS in 'EPSG:XXXX' format.
-        to_epsg (str): Target CRS in 'EPSG:XXXX' format.
-
-    Returns:
-        dict: Reprojected geometry in GeoJSON format.
-    """
     if from_epsg == to_epsg:
         return geom
     project = pyproj.Transformer.from_crs(from_epsg, to_epsg, always_xy=True).transform
     return mapping(transform(project, shape(geom)))
 
-def process_folder(input_folder, output_geojson, progress_bar, status_text, input_crs="EPSG:6350", batchsize=16):
-    """
-    Processes all LAS/LAZ files in a folder and writes the output to a GeoJSON file.
-
-    Args:
-        input_folder (str): Path to the folder containing LAS/LAZ files.
-        output_geojson (str): Path to the output GeoJSON file.
-        progress_bar (st.progress): Streamlit progress bar component
-        status_text (st.empty): Streamlit empty component for status text
-        input_crs (str, optional): Input CRS. Defaults to "EPSG:6350".
-        batchsize (int, optional): Number of files to process in parallel. Defaults to 16.
-    """
+def run_process(input_folder, output_geojson, input_crs="EPSG:6350", batchsize=16, temp_file=None, verbose=False):
+    from_epsg = input_crs.replace("EPSG:", "")
+    to_epsg = "4326"
+    if temp_file is None:
+        temp_file = output_geojson + ".ndjson"
+    
+    # Track processing results
+    successful_files = []
+    partial_files = []
+    failed_files = []
+    
+    # Find unprocessed files:
+    processed_files = set()
+    if os.path.exists(temp_file):
+        with open(temp_file, "r") as f:
+            for line in f:
+                try:
+                    feat = json.loads(line)
+                    processed_files.add(feat["properties"]["file"])
+                    successful_files.append(feat["properties"]["file"])
+                except Exception:
+                    continue
+    
     files = [os.path.join(input_folder, f) for f in os.listdir(input_folder) if f.lower().endswith((".las", ".laz"))]
-    total_files = len(files)
+    files = [f for f in files if os.path.basename(f) not in processed_files]
     
-    if total_files == 0:
-        status_text.error("No LAS/LAZ files found in the input folder.")
-        return
+
+    print(f"Found {len(files)} files to process...")
+    args = [(f, input_crs) for f in files]
     
-    # Create a shared counter for tracking progress
-    with Manager() as manager:
-        counter = manager.Value('i', 0)
-        args = [(f, input_crs, counter, total_files) for f in files]
-        features = []
-        
-        # Update the progress bar in a separate thread
-        stop_event = threading.Event()
-        
-        def update_progress():
-            while not stop_event.is_set():
-                if total_files > 0:
-                    progress = min(counter.value / total_files, 1.0)
-                    progress_bar.progress(progress)
-                    status_text.text(f"Processing: {counter.value}/{total_files} files ({progress*100:.1f}%)")
-                threading.Event().wait(0.1)  # Update every 100ms
-        
-        # Start progress updater thread
-        progress_thread = threading.Thread(target=update_progress)
-        progress_thread.daemon = True
-        progress_thread.start()
-        
-        try:
-            with Pool(batchsize) as pool:
-                results = pool.starmap(process_las_file, args)
-                for result in results:
-                    if result is not None:
-                        geom = reproject_geom(result["geometry"], result["crs_used"], "EPSG:4326")
-                        feat = {
-                            "type": "Feature",
-                            "properties": {
-                                "file": result["file"],
-                                "total_points": result["total_points"],
-                                "class_distribution": result["class_distribution"],
-                                "crs_used": result["crs_used"]
-                            },
-                            "geometry": geom
-                        }
-                        features.append(feat)
-                        
-            geojson = {
-                "type": "FeatureCollection",
-                "features": features
-            }
-            
-            with open(output_geojson, "w") as f:
-                json.dump(geojson, f)
+    # Process in parallel
+    with ThreadPoolExecutor(max_workers=batchsize) as executor, open(temp_file, "a") as outf:
+        futures = {executor.submit(process_las_file, arg): arg for arg in args}
+        for future in tqdm(as_completed(futures), total=len(futures)):
+            result = future.result()
+            if result is None:
+                continue
                 
-            progress_bar.progress(1.0)
-            status_text.success(f"Processed {len(features)} files. Output written to {output_geojson}")
-            logger.info(f"Processed {len(features)} files. Output written to {output_geojson}")
+            file_name = result["file"]
+            status = result.get("status", "unknown")
             
-        finally:
-            # Stop the progress updater thread
-            stop_event.set()
-            progress_thread.join(timeout=1.0)
+            if status == "success":
+                # Reproject to EPSG:4326 for web mapping
+                result["geometry"] = reproject_geom(result["geometry"], from_epsg, to_epsg)
+                feat = {
+                    "type": "Feature",
+                    "properties": {
+                        "file": file_name,
+                        "total_points": result["total_points"],
+                        "class_distribution": result["class_distribution"],
+                        "crs_used": result["crs_used"]
+                    },
+                    "geometry": result["geometry"]
+                }
+                outf.write(json.dumps(feat) + "\n")
+                outf.flush()  # Realtime write
+                successful_files.append(file_name)
+                if verbose:
+                    print(f"✓ Processed: {file_name} - {result['total_points']} points")
+            
+            elif status == "partial":
+                # Still include in output but with zero points
+                result["geometry"] = reproject_geom(result["geometry"], from_epsg, to_epsg)
+                feat = {
+                    "type": "Feature",
+                    "properties": {
+                        "file": file_name,
+                        "total_points": 0,
+                        "class_distribution": {},
+                        "crs_used": result["crs_used"],
+                        "warning": result.get("message", "Partial processing")
+                    },
+                    "geometry": result["geometry"]
+                }
+                outf.write(json.dumps(feat) + "\n")
+                outf.flush()
+                partial_files.append((file_name, result.get("message", "Unknown error")))
+                if verbose:
+                    print(f"⚠ Partial: {file_name} - {result.get('message', 'Unknown error')}")
+            
+            elif status == "error":
+                failed_files.append((file_name, result.get("message", "Unknown error")))
+                if verbose:
+                    print(f"✗ Failed: {file_name} - {result.get('message', 'Unknown error')}")
+            
+            else:
+                failed_files.append((file_name, "Unknown processing status"))
+                if verbose:
+                    print(f"? Unknown: {file_name} - Unknown processing status")
 
-# Streamlit UI
-st.title("LAS/LAZ File Processor")
-
-input_folder = st.text_input("Input Folder Path", value="path/to/input_folder")
-output_file_name = st.text_input("Output JSON File Name ", value="output.geojson")
-# Construct the output path in the 'map_json' folder located in the parent directory of this script
-output_geojson = os.path.join(os.path.dirname(os.path.dirname(__file__)), "map_json", output_file_name)
-#  if a file is already present, it will be overwritten add a warning
-if os.path.exists(output_geojson):
-    st.warning(f"Output file {output_geojson} already exists and will be overwritten.")
-input_crs = st.text_input("Input CRS (e.g., EPSG:6350)", value="EPSG:6350")
-batchsize = st.slider("Batch Size", min_value=1, max_value=32, value=16)
-
-# Create placeholder for progress bar and status
-progress_bar = st.progress(0)
-status_text = st.empty()
-
-def run_processing():
-    """
-    Runs the LAS/LAZ processing in a separate thread.
-    """
-    os.makedirs(os.path.dirname(output_geojson), exist_ok=True)
-    try:
-        process_folder(
-            input_folder=input_folder,
-            output_geojson=output_geojson,
-            progress_bar=progress_bar,
-            status_text=status_text,
-            input_crs=input_crs,
-            batchsize=batchsize
-        )
-    except Exception as e:
-        logger.error(f"Error during processing: {e}")
-        status_text.error(f"Error during processing: {e}")
-
-if st.button("Start Processing"):
-    # Reset progress bar and status
-    progress_bar.progress(0)
-    status_text.text("Starting processing...")
+    # Now combine all NDJSON lines into one GeoJSON FeatureCollection
+    features = []
+    with open(temp_file, "r") as f:
+        for line in f:
+            try:
+                features.append(json.loads(line))
+            except Exception as e:
+                print(f"Error parsing line in temp file: {str(e)}")
+                continue
     
-    # Start processing in a thread
-    threading.Thread(target=run_processing).start()
-    # update the status text
-    status_text.text("Processing started in the background. You can close this window.")
+    crs_obj = {
+        "type": "name",
+        "properties": {
+            "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+        }
+    }
+    geojson = {
+        "type": "FeatureCollection",
+        "name": "las_data",
+        "crs": crs_obj,
+        "features": features
+    }
+    
+    with open(output_geojson, "w") as f:
+        json.dump(geojson, f, indent=3)
+
+    
+    # Print summary report
+    total = len(successful_files) + len(partial_files) + len(failed_files)
+    print(f"\nProcessing Summary:")
+    print(f"- Successfully processed: {len(successful_files)}/{total} files")
+    print(f"- Partially processed: {len(partial_files)}/{total} files")
+    print(f"- Failed to process: {len(failed_files)}/{total} files")
+    print(f"- GeoJSON written with {len(features)} features to {output_geojson}")
+    
+    # Print failed files details
+    if failed_files:
+        print("\nFailed files:")
+        for i, (fname, err) in enumerate(failed_files, 1):
+            print(f"{i}. {fname}: {err[:100]}{'...' if len(err) > 100 else ''}")
+    
+    # Write error report
+    error_report = str(output_geojson) + ".errors.txt"
+
+    if len(failed_files) != 0 or len(partial_files) != 0:
+        with open(error_report, "w") as f:
+            f.write(f"Processing report for {input_folder}\n")
+            f.write(f"Total files: {total}\n")
+            f.write(f"Success: {len(successful_files)}\n")
+            f.write(f"Partial: {len(partial_files)}\n")
+            f.write(f"Failed: {len(failed_files)}\n\n")
+            
+            if partial_files:
+                f.write("== PARTIALLY PROCESSED FILES ==\n")
+                for fname, err in partial_files:
+                    f.write(f"{fname}: {err}\n")
+                f.write("\n")
+            
+            if failed_files:
+                f.write("== FAILED FILES ==\n")
+                for fname, err in failed_files:
+                    f.write(f"{fname}: {err}\n\n")
+        
+        if failed_files or partial_files:
+            print(f"\nDetailed error report written to {error_report}")
 
 
-# Check if output file exists
-if os.path.exists(output_geojson):
-    with open(output_geojson, "rb") as f:
-        st.download_button(
-            label="Download Processed GeoJSON",
-            data=f,
-            file_name=os.path.basename(output_geojson),
-            mime="application/json"
-        )
+# Hardcoded output folder
+OUTPUT_DIR = Path("/app/potree/crescer/map_json")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+
+def main():
+    st.title("LAS/LAZ → GeoJSON Processor")
+
+    inp = st.text_input("Input file or folder path")
+    input_crs = st.text_input("Input CRS", value="EPSG:6350")
+    batchsize = st.number_input("Batch size", value=10, min_value=1, max_value=32)
+
+    ok = False
+    paths = []
+    if inp:
+        p = Path(inp)
+        if not p.exists():
+            st.error("Path does not exist!")
+        else:
+            if p.is_file() and p.suffix.lower() in (".las", ".laz"):
+                paths = [str(p)]
+            elif p.is_dir():
+                paths = [str(p / f) for f in os.listdir(p) if f.lower().endswith((".las", ".laz"))]
+            else:
+                st.error("Unsupported input type.")
+            ok = bool(paths)
+            if ok:
+                st.success(f"{len(paths)} LAS/LAZ files found.")
+
+    if ok:
+        suggested = Path(inp).stem + ".geojson"
+        output_geojson = st.text_input("Output GeoJSON file name", value=suggested)
+        temp_file = str(output_geojson) + ".ndjson"
+        st.write(f"📄 Output file: `{output_geojson}` (in `{OUTPUT_DIR}`)")
+        already = []
+        temp_path = OUTPUT_DIR / temp_file
+        st.write(f"📝 Temp file: `{temp_file}` (in `{temp_path}`)")
+        if os.path.exists(temp_path):
+            with open(temp_path) as f:
+                already = {json.loads(l)["properties"]["file"] for l in f}
+            st.info(f"{len(already)} files already processed; will process remaining {len(paths) - len(already)}.")
+        else:
+            st.info("No prior runs – will process all files.")
+
+        if st.button("Start Processing"):
+            run_process(
+                input_folder=Path(inp),
+                output_geojson=OUTPUT_DIR / output_geojson,
+                input_crs=input_crs,
+                batchsize=batchsize,
+                temp_file=OUTPUT_DIR /temp_file,
+                verbose=True
+            )
+
+
+if __name__ == "__main__":
+    main()

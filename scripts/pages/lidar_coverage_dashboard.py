@@ -7,9 +7,12 @@ import json
 import random
 import copy
 import colorsys
+from pathlib import Path
 
 st.set_page_config(layout="wide", page_title="LiDAR FeatureCollection Viewer")
 st.title("LiDAR LAS/LAZ FeatureCollection Map Viewer with Filtering")
+
+JSON_DIR = Path("/app/potree/crescer/map_json")
 
 def generate_distinct_colors(n):
     colors = []
@@ -38,12 +41,7 @@ if uploaded_file:
     except Exception as e:
         st.sidebar.error(f"Error parsing JSON: {e}")
 else:
-    try:
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-    except NameError:
-        current_dir = os.getcwd()
-    parent_dir = os.path.dirname(current_dir)
-    json_folder = os.path.join(parent_dir, "map_json")
+    json_folder = JSON_DIR
     os.makedirs(json_folder, exist_ok=True)  # # Create the folder if it doesn't exist
     json_files = []
     try:
@@ -61,7 +59,7 @@ else:
                 except Exception as e:
                     st.sidebar.error(f"Failed to load file: {e}")
     else:
-        st.sidebar.error("No JSON files found in ../map_json folder.")
+        st.sidebar.error("No JSON files found in /app/potree/crescer/map_json folder.")
 
 
 if not data:
@@ -188,10 +186,11 @@ center_lat = sum(lats) / len(lats)
 center_lon = sum(lons) / len(lons)
 bounds = [[min(lats), min(lons)], [max(lats), max(lons)]]
 
-map_style = st.sidebar.selectbox("Map Style", ["OpenStreetMap", "CartoDB positron"])
+map_style = st.sidebar.selectbox("Map Style", ["OpenStreetMap", "CartoDB positron", "Esri Satellite"])
 tile_dict = {
     "OpenStreetMap": "OpenStreetMap",
-    "CartoDB positron": "CartoDB positron"
+    "CartoDB positron": "CartoDB positron",
+    "Esri Satellite": "Esri.WorldImagery"  
 }
 tiles = tile_dict.get(map_style, "OpenStreetMap")
 

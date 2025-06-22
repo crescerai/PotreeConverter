@@ -197,6 +197,7 @@ def background_convert(input_folder: Path, output_folder: Path, need_cleaning: b
         f.write(f"Output: {output_folder}\n")
         f.write(f"Cleaning needed: {need_cleaning}\n\n")
     
+    
     def process_files():
         start_time = time.time()
         
@@ -463,7 +464,7 @@ def main():
     st.subheader("Dataset Information")
     
     # Dataset description with existing value if available
-    default_description = existing_data.get("description", "") if existing_data else ""
+    default_description = existing_data.get("description", "") if existing_data else "Input_Folder: " + str(input_folder)
     dataset_description = st.text_area(
         "Dataset Description", 
         help="Add a description for this dataset. It will be saved in the output folder.",

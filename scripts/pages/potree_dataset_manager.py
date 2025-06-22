@@ -8,20 +8,52 @@ import ast
 from datetime import datetime
 
 BASE_OUTPUT_FOLDER = Path("/app/potree/crescer")
-EXCLUDE_FOLDERS = {"libs", "pointcloud"}
+EXCLUDE_FOLDERS = {"libs", "pointclouds"}
 
-def find_all_datasets(base_folder):
-    """Recursively find all dataset folders under base_folder."""
+def find_all_datasets(base_folder: Path) -> list[Path]:
+    """
+    Recursively find all valid dataset folders under `base_folder`.
+
+    A valid dataset folder:
+    - Contains both `libs/` and `pointclouds/` subdirectories.
+    - Will get a `dataset_description.json` generated if missing.
+
+    Folders named in EXCLUDE_FOLDERS are skipped during recursion.
+
+    Args:
+        base_folder (Path): The root folder to scan from.
+
+    Returns:
+        list[Path]: List of dataset folder paths.
+    """
     datasets = []
+
+    # Check if this folder qualifies as a dataset
+    has_libs = (base_folder / "libs").is_dir()
+    has_pointclouds = (base_folder / "pointclouds").is_dir()
+
+    if has_libs and has_pointclouds:
+        desc_file = base_folder / "dataset_description.json"
+
+        if not desc_file.exists():
+            data = {
+                "folder_path": str(base_folder.relative_to(BASE_OUTPUT_FOLDER)),
+                "description": "Auto generated dataset description",
+                "expiry_date": "",
+                "created_at": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "last_updated": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+            with open(desc_file, "w") as f:
+                json.dump(data, f, indent=4)
+
+        datasets.append(base_folder)
+        return datasets  # Do not recurse into valid dataset folder
+
+    # Recurse into subfolders if not excluded
     for item in base_folder.iterdir():
         if item.is_dir() and item.name not in EXCLUDE_FOLDERS:
-            desc_file = item / "dataset_description.json"
-            if desc_file.exists():
-                datasets.append(item)
-            else:
-                subfolders = [x for x in item.iterdir() if x.is_dir() and x.name not in EXCLUDE_FOLDERS]
-                for sub in subfolders:
-                    datasets += find_all_datasets(sub)
+            datasets.extend(find_all_datasets(item))
+
     return datasets
 
 def load_description(dataset_folder):
@@ -179,6 +211,7 @@ for folder in all_datasets:
     })
 
 df = pd.DataFrame(rows)
+
 if not df.empty:
     st.subheader("Datasets (edit and save to apply changes)")
     edited_df = st.data_editor(
