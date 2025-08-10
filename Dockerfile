@@ -16,9 +16,9 @@ RUN apt-get update && apt-get install -y \
     libpdal-dev \
     python3-pip
 
-RUN pip install streamlit
+RUN pip install streamlit laspy==2.5.4 laszip==0.2.3 lazrs==0.6.1 folium tqdm shapely streamlit_folium icecream pyproj 
 
 COPY . .
 RUN mkdir build && cd build && cmake ../ && make
 
-CMD ["streamlit", "run", "script/webui_potree.py"]
+CMD ["streamlit", "run", "script/potree_converter_dashboard.py"]
