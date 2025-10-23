@@ -14,9 +14,10 @@ RUN apt-get update && apt-get install -y \
     libboost-all-dev \
     libgeos-dev \
     libpdal-dev \
+    pdal \
     python3-pip
 
-RUN pip install streamlit
+RUN pip install streamlit polars typer
 
 COPY . .
 RUN mkdir build && cd build && cmake ../ && make
