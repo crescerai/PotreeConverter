@@ -14,9 +14,10 @@ RUN apt-get update && apt-get install -y \
     libboost-all-dev \
     libgeos-dev \
     libpdal-dev \
+    pdal \
     python3-pip
 
-RUN pip install streamlit laspy==2.5.4 laszip==0.2.3 lazrs==0.6.1 folium tqdm shapely streamlit_folium icecream pyproj 
+RUN pip install streamlit laspy==2.5.4 laszip==0.2.3 lazrs==0.6.1 folium tqdm shapely streamlit_folium icecream pyproj polars typer
 
 COPY . .
 RUN mkdir build && cd build && cmake ../ && make
