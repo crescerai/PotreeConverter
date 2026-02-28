@@ -22,4 +22,4 @@ RUN pip install streamlit laspy==2.5.4 laszip==0.2.3 lazrs==0.6.1 folium tqdm sh
 COPY . .
 RUN mkdir build && cd build && cmake ../ && make
 
-CMD ["streamlit", "run", "script/potree_converter_dashboard.py"]
+CMD ["streamlit", "run", "scripts/potree_converter_dashboard.py"]
