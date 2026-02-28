@@ -13,27 +13,20 @@ EXCLUDE_FOLDERS = {"libs", "pointclouds"}
 def find_all_datasets(base_folder: Path) -> list[Path]:
     """
     Recursively find all valid dataset folders under `base_folder`.
-
-    A valid dataset folder:
-    - Contains both `libs/` and `pointclouds/` subdirectories.
-    - Will get a `dataset_description.json` generated if missing.
-
-    Folders named in EXCLUDE_FOLDERS are skipped during recursion.
-
-    Args:
-        base_folder (Path): The root folder to scan from.
-
-    Returns:
-        list[Path]: List of dataset folder paths.
+    
+    If a folder contains libs, pointclouds, and files, it will be added as a dataset,
+    and the script will continue recursing into any extra subdirectories.
     """
     datasets = []
 
-    # Check if this folder qualifies as a dataset
     has_libs = (base_folder / "libs").is_dir()
     has_pointclouds = (base_folder / "pointclouds").is_dir()
-    has_files = (base_folder / "files").is_dir()  # copc will have this instead of pointclouds
+    has_files = (base_folder / "files").is_dir()
+    
+    is_root = (base_folder == BASE_OUTPUT_FOLDER)
 
-    if has_libs and (has_pointclouds or has_files):
+    # Check if this qualifies as a dataset (ignoring the root folder itself)
+    if not is_root and has_libs and (has_pointclouds or has_files):
         desc_file = base_folder / "dataset_description.json"
 
         if not desc_file.exists():
@@ -47,10 +40,18 @@ def find_all_datasets(base_folder: Path) -> list[Path]:
             with open(desc_file, "w") as f:
                 json.dump(data, f, indent=4)
 
+        # "Return the current one" -> Append the valid dataset to our list
         datasets.append(base_folder)
-        return datasets  # Do not recurse into valid dataset folder
 
-    # Recurse into subfolders if not excluded
+        # If all 3 are present, skip the early return so we can recurse into extra folders
+        if has_libs and has_pointclouds and has_files:
+            pass # Let the script fall through to the for-loop below
+        else:
+            return datasets  # For standard datasets, stop recursing here
+
+    # "And also go inside the folder" -> Check for extra directories
+    # Because 'libs', 'pointclouds', and 'files' are in EXCLUDE_FOLDERS, 
+    # the script will automatically bypass them and only dive into the extra folders.
     for item in base_folder.iterdir():
         if item.is_dir() and item.name not in EXCLUDE_FOLDERS:
             datasets.extend(find_all_datasets(item))
