@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" fill="none" stroke="#8E44AD" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-label="Volume labeling icon">
+  <rect x="12" y="16" width="18" height="16" fill="#E8DAEF" />
+  <path d="M12 16 L18 10 L36 10 L30 16 Z" fill="#F5EEF8" />
+  <path d="M30 16 L36 10 L36 26 L30 32 Z" fill="#E8DAEF" />
+  <path d="M18 10 L18 26" stroke-dasharray="2 3" />
+  <path d="M28 10 L28 26" stroke-dasharray="2 3" />
+</svg>

@@ -4,7 +4,6 @@ import numpy as np
 from pathlib import Path
 import pandas as pd
 import tqdm
-from icecream import ic
 import traceback
 from concurrent.futures import ProcessPoolExecutor
 

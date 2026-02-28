@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" fill="none" stroke="#2980B9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Focus in icon">
+  <!-- magnifying glass -->
+  <circle cx="21" cy="21" r="10" fill="#ECF6FD" stroke="#2980B9" />
+  <line x1="28" y1="28" x2="42" y2="42" />
+  <!-- plus sign inside lens -->
+  <line x1="21" y1="16" x2="21" y2="26" />
+  <line x1="16" y1="21" x2="26" y2="21" />
+</svg>

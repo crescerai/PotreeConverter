@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 48" width="64" height="48" fill="none" stroke="#2980B9" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-label="Bounding box zoom icon">
+  <rect x="6" y="6" width="40" height="32" stroke-dasharray="4 3" />
+  <rect x="4" y="4" width="4" height="4" fill="#F1C40F" stroke="none"/>
+  <rect x="46" y="4" width="4" height="4" fill="#F1C40F" stroke="none"/>
+  <rect x="4" y="34" width="4" height="4" fill="#F1C40F" stroke="none"/>
+  <rect x="46" y="34" width="4" height="4" fill="#F1C40F" stroke="none"/>
+  <circle cx="56" cy="36" r="5" stroke="#2980B9" stroke-width="1.6" fill="none"/>
+  <path d="M60 40 L63 43" stroke="#2980B9" stroke-width="1.6" />
+  <circle cx="56" cy="36" r="2" fill="#2980B9" stroke="none"/>
+</svg>

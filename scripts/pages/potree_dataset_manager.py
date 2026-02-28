@@ -31,8 +31,9 @@ def find_all_datasets(base_folder: Path) -> list[Path]:
     # Check if this folder qualifies as a dataset
     has_libs = (base_folder / "libs").is_dir()
     has_pointclouds = (base_folder / "pointclouds").is_dir()
+    has_files = (base_folder / "files").is_dir()  # copc will have this instead of pointclouds
 
-    if has_libs and has_pointclouds:
+    if has_libs and (has_pointclouds or has_files):
         desc_file = base_folder / "dataset_description.json"
 
         if not desc_file.exists():
