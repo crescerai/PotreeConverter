@@ -17,8 +17,8 @@ CURRENT_DIR = Path(__file__).parent
 LIBRARY_FOLDER = CURRENT_DIR / "libs"
 TEMPLATE_FILE = CURRENT_DIR / "template.html"
 TEMPLATE_MULTI_FILE = CURRENT_DIR / "template_multi_files.html"
-BASE_OUTPUT_FOLDER = Path(os.getenv('POTREE_BASE_PATH', '/home/sachin/potree_setup/potree/crescer'))
-URL_BASE = os.getenv('URL_BASE', 'http://ninja:1234/crescer')
+BASE_OUTPUT_FOLDER = Path(os.getenv('POTREE_BASE_PATH', '/app/potree/crescer'))
+URL_BASE = os.getenv('POTREE_URL', 'http://ninja:1234/crescer')
 # ---------------------
 
 BASE_OUTPUT_FOLDER.mkdir(exist_ok=True)

@@ -1,5 +1,6 @@
 import streamlit as st
 import json
+import os
 import shutil
 from pathlib import Path
 import re
@@ -7,7 +8,7 @@ import pandas as pd
 import ast
 from datetime import datetime
 
-BASE_OUTPUT_FOLDER = Path("/app/potree/crescer")
+BASE_OUTPUT_FOLDER = Path(os.getenv("POTREE_BASE_PATH", "/app/potree/crescer"))
 EXCLUDE_FOLDERS = {"libs", "pointclouds"}
 
 def find_all_datasets(base_folder: Path) -> list[Path]:

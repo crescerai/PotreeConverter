@@ -9,8 +9,9 @@ import datetime
 import streamlit as st
 from lidar_format_corrector import clean_las
 
-POTREE_CONVERTER_PATH = "/app/build/PotreeConverter"
-BASE_OUTPUT_FOLDER = Path("/app/potree/crescer")
+POTREE_CONVERTER_PATH = os.getenv("POTREE_CONVERTER_PATH", "/app/build/PotreeConverter")
+BASE_OUTPUT_FOLDER = Path(os.getenv("POTREE_BASE_PATH", "/app/potree/crescer"))
+POTREE_URL = os.getenv("POTREE_URL", "http://ninja:1234/crescer")
 
 BASE_OUTPUT_FOLDER.mkdir(exist_ok=True)
 
@@ -501,7 +502,7 @@ def main():
                 st.info(f"**Last Updated:** {existing_data.get('last_updated', 'Unknown')}")
 
     # Display URL where files will be accessible
-    potree_url = str(output_folder).replace(str(BASE_OUTPUT_FOLDER), "http://wall-e:1234/crescer")
+    potree_url = str(output_folder).replace(str(BASE_OUTPUT_FOLDER), POTREE_URL)
     st.write("Converted files will be accessible here:", potree_url)
 
     # Validate input

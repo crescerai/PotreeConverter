@@ -12,7 +12,7 @@ from pathlib import Path
 st.set_page_config(layout="wide", page_title="LiDAR FeatureCollection Viewer")
 st.title("LiDAR LAS/LAZ FeatureCollection Map Viewer with Filtering")
 
-JSON_DIR = Path("/app/potree/crescer/map_json")
+JSON_DIR = Path(os.getenv("MAP_JSON_PATH", "/app/potree/crescer/map_json"))
 
 def generate_distinct_colors(n):
     colors = []
@@ -59,7 +59,7 @@ else:
                 except Exception as e:
                     st.sidebar.error(f"Failed to load file: {e}")
     else:
-        st.sidebar.error("No JSON files found in /app/potree/crescer/map_json folder.")
+        st.sidebar.error(f"No JSON files found in {JSON_DIR} folder.")
 
 
 if not data:

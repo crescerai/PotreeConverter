@@ -376,7 +376,7 @@ def run_process(
 # STREAMLIT UI
 # ==============================================================================
 
-OUTPUT_DIR = Path("/app/potree/crescer/map_json")
+OUTPUT_DIR = Path(os.getenv("MAP_JSON_PATH", "/app/potree/crescer/map_json"))
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 def render_batch_processor():

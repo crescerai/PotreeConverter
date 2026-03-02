@@ -13,6 +13,7 @@ import subprocess
 import streamlit as st
 import json
 import re
+import os
 from pathlib import Path
 from urllib.parse import urlparse
 import pandas as pd
@@ -28,8 +29,8 @@ sys.path.append(str(Path(__file__).parent))
 from apply_annotation_new_labeling import apply_annotation_on_file
 
 # ==================== CONFIGURATION ====================
-POTREE_BASE_PATH = Path("/home/sachin/potree_setup/potree/crescer")
-URL_BASE = "http://ninja:1234/crescer"
+POTREE_BASE_PATH = Path(os.getenv("HOST_POTREE_BASE_PATH", os.getenv("POTREE_BASE_PATH", "/app/potree/crescer")))
+URL_BASE = os.getenv("POTREE_URL", "http://ninja:1234/crescer")
 
 EXCLUDED_FOLDERS = {"libs", "pointclouds", "annotations"}
 
@@ -405,7 +406,7 @@ col1, col2 = st.columns([2, 1])
 with col1:
     potree_url = st.text_input(
         "Potree URL (folder or HTML file)",
-        placeholder="http://ninja:1234/crescer/teledyne/1_merged.html",
+        placeholder=f"{URL_BASE}/teledyne/1_merged.html",
         help="Enter the URL to a Potree folder or specific HTML file"
     )
 
