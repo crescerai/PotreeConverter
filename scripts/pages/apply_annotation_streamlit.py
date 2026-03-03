@@ -25,7 +25,7 @@ import traceback
 import shutil
 
 # Add parent directory to path for imports
-sys.path.append(str(Path(__file__).parent))
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 from apply_annotation_new_labeling import apply_annotation_on_file
 
 # ==================== CONFIGURATION ====================
