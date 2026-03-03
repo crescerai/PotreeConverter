@@ -9,8 +9,30 @@ import copy
 import colorsys
 from pathlib import Path
 
-st.set_page_config(layout="wide", page_title="LiDAR FeatureCollection Viewer")
-st.title("LiDAR LAS/LAZ FeatureCollection Map Viewer with Filtering")
+st.set_page_config(layout="wide", page_title="Coverage Map")
+st.title("🗺️ Coverage Map")
+
+with st.expander("ℹ️ How to use this page", expanded=False):
+    st.markdown("""
+    **What this page does**
+    Displays the spatial footprint (bounding boxes) of all LAS / LAZ tiles in a GeoJSON
+    summary file on an interactive map, coloured by the percentage of points belonging to
+    a chosen classification class. Useful for quickly identifying which tiles contain
+    vegetation, wires, buildings, etc.
+
+    **Requirements**
+    - A **GeoJSON summary file** produced by the **GeoJSON Extractor** page (page 4); OR
+    - `.json` / `.geojson` files placed in the `MAP_JSON_PATH` folder
+      (default `/app/potree/crescer/map_json`)
+
+    **Quick start**
+    1. **Upload** a `.json` / `.geojson` file using the sidebar uploader, or
+       **select** one from the dropdown if files are already in the map folder
+    2. Set the **class number** to analyse (e.g. `41` for wires)
+    3. Define **percentage ranges** to colour-code the tiles (e.g. `0-1,1-4,4-100`)
+    4. Adjust group colours and inclusion in the sidebar
+    5. Interact with the map — click a tile to see its properties
+    """)
 
 JSON_DIR = Path(os.getenv("MAP_JSON_PATH", "/app/potree/crescer/map_json"))
 

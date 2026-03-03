@@ -380,8 +380,36 @@ def process_single_file(
 
 st.set_page_config(page_title="Annotation Applicator", layout="wide")
 
-st.title("🎯 Potree Annotation Applicator")
-st.markdown("Apply Potree viewer annotations to LAS/LAZ/COPC point cloud files")
+st.title("🎯 Annotation Tool")
+
+with st.expander("ℹ️ How to use this page", expanded=False):
+    st.markdown("""
+    **What this page does**
+    Reads annotations drawn in a Potree 3D viewer and writes the class labels back onto
+    the original LAS / LAZ / COPC point-cloud files, so every point carries its annotated
+    classification.
+
+    **Requirements**
+    - A **Potree viewer URL** (e.g. `http://ninja:1234/crescer/my_dataset`) or the path to
+      a specific HTML file inside that dataset folder
+    - Annotations **already drawn and saved** inside the Potree viewer before running this
+    - **PDAL** installed in PATH — only needed when output format is COPC
+    - The input LAS / LAZ files on disk (the tool auto-locates them from the URL / path)
+
+    **Processing modes**
+    | Mode | What it does |
+    |---|---|
+    | **Normal** | Processes files and writes output to a separate folder; originals untouched |
+    | **Update** | Backs up existing classifications then overwrites COPC tiles in-place |
+
+    **Quick start**
+    1. Select a processing mode (Normal or Update)
+    2. Paste the Potree dataset URL or HTML file path
+    3. Review the detected input/annotation folders
+    4. Choose an output format (LAS / LAZ / COPC)
+    5. Click **Start Processing**
+    """)
+
 st.info("Potree base path: " + str(POTREE_BASE_PATH) + " and URL base: " + URL_BASE)
 
 # ==================== MODE SELECTION ====================

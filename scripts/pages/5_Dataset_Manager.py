@@ -186,8 +186,38 @@ def is_expired(expiry_date):
 
 # --- Streamlit UI ---
 
-st.set_page_config(page_title="Potree Dataset Admin", layout="wide")
-st.title("Potree Dataset Manager")
+st.set_page_config(page_title="Dataset Manager", layout="wide")
+st.title("🗃️ Dataset Manager")
+
+with st.expander("ℹ️ How to use this page", expanded=False):
+    st.markdown("""
+    **What this page does**
+    Lists every Potree dataset under the output folder and lets you manage them:
+    rename datasets, edit descriptions, set expiry dates, and customise the
+    point-cloud classification colour scheme shown in the viewer.
+
+    **Requirements**
+    - Access to the Potree base output folder (`POTREE_BASE_PATH` env var,
+      default `/app/potree/crescer`)
+    - Datasets must have been created by the **COPC Converter** page (page 2) — a valid
+      dataset folder contains `libs/`, `pointclouds/`, and `files/` sub-folders
+
+    **Dataset table**
+    Each row shows a dataset with editable fields. Change values and click
+    **Save Changes** to persist them to `dataset_description.json` inside that folder.
+
+    | Field | Description |
+    |---|---|
+    | **Name** | Display name shown in viewer index |
+    | **Description** | Free-text notes visible in the index page |
+    | **Expiry date** | Dataset is flagged as expired after this date (YYYY-MM-DD) |
+
+    **Classification Scheme editor**
+    Edit RGB or hex colours for each point-cloud class. Changes are written directly
+    into `potree.js` inside the dataset folder — the viewer will reflect them on next
+    page load. Use the sidebar **RGB/Hex to Potree Color** converter to format colours
+    correctly.
+    """)
 
 # 1. Sidebar color converter
 st.sidebar.header("RGB/Hex to Potree Color")

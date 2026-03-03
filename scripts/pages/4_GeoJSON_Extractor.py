@@ -498,8 +498,40 @@ def render_file_inspector():
                     st.json(info.get("metadata", {}))
 
 def main():
-    st.set_page_config(page_title="Lidar Data Tools", layout="wide")
-    st.title("Lidar Data Processor and Inspector")
+    st.set_page_config(page_title="GeoJSON Extractor", layout="wide")
+    st.title("📐 GeoJSON Extractor")
+
+    with st.expander("ℹ️ How to use this page", expanded=False):
+        st.markdown("""
+        **What this page does**
+        Scans a folder of LAS / LAZ / COPC files, extracts the bounding box and point
+        classification counts for every tile, reprojects them to WGS-84 (EPSG:4326), and
+        saves the result as a single **GeoJSON** file. That file can then be loaded directly
+        into the **Coverage Map** page (page 3) for interactive visualisation.
+
+        **Requirements**
+        - **PDAL** installed in PATH (used by the File Inspector tab and for COPC conversion)
+        - A folder containing `.las`, `.laz`, or `.copc.laz` files
+        - The **EPSG code** of the input coordinate system (e.g. `EPSG:6350` for NAD83 2011)
+          — check your data provider or use the File Inspector tab to detect it automatically
+
+        **Quick start (Batch Processor)**
+        1. Enter the **input folder** path
+        2. Confirm or change the **Input CRS** (EPSG code)
+        3. Set a **batch size** (threads) — 8 is a good default
+        4. Click **Start Processing** — a progress bar shows each file
+        5. The output `.geojson` file is saved to the map folder; open the Coverage Map page
+           to view it
+
+        **Resumable processing**
+        Progress is saved incrementally to a `.ndjson` temp file. If your browser session
+        closes mid-run, simply re-open the page and click Start Processing again —
+        already-processed files are automatically skipped.
+
+        **File Inspector tab**
+        Paste a single file path to inspect its bounds, EPSG code, and full PDAL metadata
+        without running a batch job.
+        """)
 
     tab1, tab2 = st.tabs(["Batch Processor", "File Inspector"])
     with tab1:

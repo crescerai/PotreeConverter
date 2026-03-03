@@ -439,8 +439,31 @@ def convert(input_folder: Path, output_folder: Path, srs_code: str,
         st.warning("No files to process")
 
 def main():
-    st.set_page_config(page_title="COPC Potree Generator", layout="wide")
-    st.title("🌲 COPC Potree Generator")
+    st.set_page_config(page_title="COPC Converter", layout="wide")
+    st.title("🌲 COPC Converter")
+
+    with st.expander("ℹ️ How to use this page", expanded=False):
+        st.markdown("""
+        **What this page does**
+        Converts a folder of LAS / LAZ point-cloud files into
+        **Cloud Optimised Point Clouds (COPC)** and automatically generates a Potree HTML
+        viewer page so the dataset can be explored in a browser immediately after conversion.
+
+        **Requirements**
+        - **PDAL** installed and accessible in PATH — verify with `pdal --version`
+        - A folder containing `.las` or `.laz` files (COPC `.copc.laz` files are passed through
+          without re-conversion)
+        - Write access to the Potree output base folder (`POTREE_BASE_PATH` env var,
+          default `/app/potree/crescer`)
+
+        **Quick start**
+        1. Set the **input folder** path in the sidebar
+        2. Give the dataset a **name** and optional description
+        3. Optionally override the source SRS if the file lacks CRS metadata
+        4. Click **Convert** — progress is shown in real time
+        5. When done, the output URL is displayed — open it in your browser
+        """)
+
     st.markdown("Convert LAS/LAZ files to **COPC** and generate Potree HTML viewers")
 
     with st.sidebar:
