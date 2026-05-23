@@ -27,6 +27,7 @@
 	<script src="./libs/jstree/jstree.js"></script>
 	<script src="./libs/potree/potree.js"></script>
 	<script src="./libs/plasio/js/laslaz.js"></script>
+	<script src="./libs/shapefile/shapefile.js"></script>
 	
 	<!-- INCLUDE ADDITIONAL DEPENDENCIES HERE -->
 	<!-- INCLUDE SETTINGS HERE -->
@@ -72,7 +73,7 @@
 				data: dataString
 			};
 			console.log(json);
-			fetch("<!-- SERVER_URL -->", {
+			fetch(<!-- SERVER_URL -->, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
@@ -103,6 +104,12 @@
 			<!-- INCLUDE POINTCLOUD -->
 		}
 		
+		window.addEventListener('keydown', (event) => {
+			if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+				event.preventDefault();
+				window.setSave();
+			}
+		});
 	</script>
 	
 	
