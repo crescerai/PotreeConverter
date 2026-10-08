@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="Potree Viewer - All Clouds">
+    <meta name="author" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Potree Aggregator</title>
+
+    <link rel="stylesheet" type="text/css" href="./libs/potree/potree.css">
+    <link rel="stylesheet" type="text/css" href="./libs/jquery-ui/jquery-ui.min.css">
+    <link rel="stylesheet" type="text/css" href="./libs/openlayers3/ol.css">
+    <link rel="stylesheet" type="text/css" href="./libs/spectrum/spectrum.css">
+    <link rel="stylesheet" type="text/css" href="./libs/jstree/themes/mixed/style.css">
+</head>
+
+<body>
+    <script src="./libs/jquery/jquery-3.1.1.min.js"></script>
+    <script src="./libs/spectrum/spectrum.js"></script>
+    <script src="./libs/jquery-ui/jquery-ui.min.js"></script>
+    <script src="./libs/other/BinaryHeap.js"></script>
+    <script src="./libs/tween/tween.min.js"></script>
+    <script src="./libs/d3/d3.js"></script>
+    <script src="./libs/proj4/proj4.js"></script>
+    <script src="./libs/openlayers3/ol.js"></script>
+    <script src="./libs/i18next/i18next.js"></script>
+    <script src="./libs/jstree/jstree.js"></script>
+    <script src="./libs/potree/potree.js"></script>
+    <script src="./libs/copc/index.js"></script> 
+    <script src="./libs/plasio/js/laslaz.js"></script>
+
+    <div class="potree_container" style="position: absolute; width: 100%; height: 100%; left: 0px; top: 0px; ">
+        <div id="potree_render_area" style="background-image: url('../build/potree/resources/images/background.jpg');">
+        </div>
+        <div id="potree_sidebar_container"> </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from "./libs/three.js/build/three.module.js";
+
+        window.viewer = new Potree.Viewer(document.getElementById("potree_render_area"));
+        
+        viewer.setEDLEnabled(true);
+        viewer.setFOV(60);
+        viewer.setPointBudget(2_000_000); // Increased budget for multiple clouds
+        viewer.loadSettingsFromURL();
+        
+        viewer.setDescription("Multiple Point Cloud Viewer");
+        
+        viewer.loadGUI(() => {
+            viewer.setLanguage('en');
+            $("#menu_scene").next().show();
+            $("#menu_filters").next().show();
+            $("#menu_tools").next().show();
+            viewer.toggleSidebar();
+        });
+                
+        function loadPointCloudPromise(path, name) {
+            return new Promise((resolve, reject) => {
+                try {
+                    Potree.loadPointCloud(path, name, e => {
+                        resolve(e.pointcloud); // Resolve with the pointcloud object
+                    });
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        /**
+         * Main function to control loading order
+         */
+        async function loadData() {
+            
+            const cloudsToLoad = __POINTCLOUD_LIST_JSON__;
+
+            if (cloudsToLoad.length === 0) {
+                console.warn("No point clouds to load.");
+                return;
+            }
+
+            console.log(`Loading ${cloudsToLoad.length} point clouds...`);
+
+            try {
+                for (const cloudDef of cloudsToLoad) {
+                    console.log(`Loading: ${cloudDef.name} from ${cloudDef.path}`);
+                    
+                    const pointcloud = await loadPointCloudPromise(cloudDef.path, cloudDef.name);
+                    
+                    // Apply generic material settings
+                    let material = pointcloud.material;
+                    material.size = 0.5;
+                    material.pointSizeType = Potree.PointSizeType.ADAPTIVE;
+                    material.shape = Potree.PointShape.PARABOLOID;
+                    material.activeAttributeName = "classification";
+                    
+                    // Add it to the scene
+                    viewer.scene.addPointCloud(pointcloud);
+                }
+            } catch (error) {
+                console.error("Failed to load a point cloud:", error);
+                alert("Error: Could not load one or more point clouds.");
+                return;
+            }
+
+            // Fit camera to all loaded clouds *after* all are added
+            viewer.fitToScreen();
+            console.log("All point clouds loaded.");
+        }
+
+        // Run the main loading function
+        loadData();
+
+    </script>
+</body>
+</html>

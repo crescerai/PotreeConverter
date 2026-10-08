@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="Potree Viewer with Save/Load Functionality">
+    <meta name="author" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Potree Viewer</title>
+
+    <link rel="stylesheet" type="text/css" href="./libs/potree/potree.css">
+    <link rel="stylesheet" type="text/css" href="./libs/jquery-ui/jquery-ui.min.css">
+    <link rel="stylesheet" type="text/css" href="./libs/openlayers3/ol.css">
+    <link rel="stylesheet" type="text/css" href="./libs/spectrum/spectrum.css">
+    <link rel="stylesheet" type="text/css" href="./libs/jstree/themes/mixed/style.css">
+</head>
+
+<body>
+    <script src="./libs/jquery/jquery-3.1.1.min.js"></script>
+    <script src="./libs/spectrum/spectrum.js"></script>
+    <script src="./libs/jquery-ui/jquery-ui.min.js"></script>
+    <script src="./libs/other/BinaryHeap.js"></script>
+    <script src="./libs/tween/tween.min.js"></script>
+    <script src="./libs/d3/d3.js"></script>
+    <script src="./libs/proj4/proj4.js"></script>
+    <script src="./libs/openlayers3/ol.js"></script>
+    <script src="./libs/i18next/i18next.js"></script>
+    <script src="./libs/jstree/jstree.js"></script>
+    <script src="./libs/potree/potree.js"></script>
+    <script src="./libs/copc/index.js"></script> 
+    <script src="./libs/plasio/js/laslaz.js"></script>
+
+    <div class="potree_container" style="position: absolute; width: 100%; height: 100%; left: 0px; top: 0px; ">
+        <div id="potree_render_area" style="background-image: url('../build/potree/resources/images/background.jpg');">
+            <span style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 10000">
+                <input type="button" value="SAVE" onclick="setSave()"/>
+            </span>
+        </div>
+        <div id="potree_sidebar_container"> </div>
+    </div>
+
+    <script type="module">
+        // Import Three.js for broader compatibility
+        import * as THREE from "./libs/three.js/build/three.module.js";
+        const pointcloudPath = "__POINTCLOUD_PATH__"; // e.g., "./files/my_cloud.copc.laz"
+        const pointcloudName = "__POINTCLOUD_NAME__"; // e.g., "My Awesome Cloud"
+        const saveEndpoint = "http://ninja:3001/save-json"; // e.g., "http://localhost:3001/save-json"
+        // ----------------------------------------------------
+
+        // --- NEW ---
+        // Set the page title to the point cloud's name
+        document.title = pointcloudName;
+        // --- END NEW ---
+        
+        const ANNOTATION_DIR = "annotations";
+        const annotation_file = `./${ANNOTATION_DIR}/${pointcloudName}.json`;
+        
+        window.viewer = new Potree.Viewer(document.getElementById("potree_render_area"));
+        
+        viewer.setEDLEnabled(true);
+        viewer.setFOV(60);
+        viewer.setPointBudget(2_000_000);
+        viewer.loadSettingsFromURL();
+        
+        viewer.setDescription("Point Cloud Viewer");
+        
+        viewer.loadGUI(() => {
+            viewer.setLanguage('en');
+            $("#menu_scene").next().show();
+            $("#menu_filters").next().show();
+            $("#menu_tools").next().show();
+            viewer.toggleSidebar();
+        });
+
+        window.setSave = function(){
+            let data = Potree.saveProject(viewer);
+            let dataString = JSON.stringify(data);
+            let payload = {
+                url: window.location.href, 
+                data: dataString
+            };
+
+            console.log("Saving project:", payload);
+
+            fetch(saveEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Data saved successfully!');
+                } else {
+                    alert('Failed to save data.');
+                    console.error('Save failed:', response);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while saving data.');
+            });
+        }
+                
+        /**
+         * Wraps Potree.loadPointCloud in a Promise so we can 'await' it.
+         */
+        function loadPointCloudPromise(path, name) {
+            return new Promise((resolve, reject) => {
+                Potree.loadPointCloud(path, name, e => {
+                    let scene = viewer.scene;
+                    let pointcloud = e.pointcloud;
+                    let material = pointcloud.material;
+                    material.size = 0.30;
+                    material.pointSizeType = Potree.PointSizeType.ADAPTIVE;
+                    material.shape = Potree.PointShape.PARABOLOID;
+                    material.activeAttributeName = "classification";
+                    
+                    scene.addPointCloud(pointcloud);
+                    viewer.fitToScreen();
+                    
+                    // Resolve the promise once the point cloud is added
+                    resolve(pointcloud); 
+                });
+            });
+        }
+
+        /**
+         * Main function to control loading order
+         */
+        async function loadData() {
+            // Step 1: ALWAYS load the base point cloud
+            try {
+                await loadPointCloudPromise(pointcloudPath, pointcloudName);
+                console.log(`Base point cloud loaded: ${pointcloudName}`);
+            } catch (error) {
+                console.error("Failed to load point cloud:", error);
+                alert("Error: Could not load the point cloud.");
+                return; // Stop if the cloud fails to load
+            }
+
+            // Step 2: Check if a project file exists
+            try {
+                const response = await fetch(annotation_file, { method: 'HEAD' });
+                
+                if (response.ok) {
+                    // Step 3: If it exists, load the project settings over the cloud
+                    await viewer.loadProject(annotation_file);
+                    console.log(`Project file loaded: ${annotation_file}`);
+                } else {
+                    console.log("No project file found. Using base point cloud settings.");
+                }
+            } catch (error) {
+                console.error("Error checking/loading project file: ", error);
+                // Don't alert here, as failing to load a project is not critical
+            }
+        }
+
+        // Run the main loading function
+        loadData();
+
+    </script>
+</body>
+</html>
